@@ -1,0 +1,27 @@
+export default async function handler(req, res) {
+  if (req.method !== 'POST') {
+    return res.status(405).json({ error: 'Method not allowed' });
+  }
+  try {
+    const { year, make, model } = req.body;
+    const response = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': process.env.ANTHROPIC_API_KEY,
+        'anthropic-version': '2023-06-01'
+      },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-5',
+        max_tokens: 1024,
+        system: 'You are a classic car investment analyst. Always respond with ONLY a valid JSON object. No explanation, no markdown, no preamble.',
+        messages: [{ role: 'user', content: `Analyze the ${year} ${make} ${model} as a collectible investment in 2026. Return exactly this JSON: {"verdict":"BUY","score":7,"currentValue":"$28,000-$45,000","trend5yr":"+15%","demand":"High","rarity":"Moderate","summary":"Two or three sentences.","bullCase":"One positive factor.","bearCase":"One risk factor.","buyerTip":"One actionable tip.","segment":"American Muscle","priceHistory":[{"year":2020,"val":25000},{"year":2021,"val":30000},{"year":2022,"val":38000},{"year":2023,"val":36000},{"year":2024,"val":34000},{"year":2025,"val":37000}]} Replace all values with accurate data for the ${year} ${make} ${model}.` }]
+      })
+    });
+    const data = await response.json();
+    const result = data.content[0].text;
+    res.status(200).json({ result });
+  } catch(e) {
+    res.status(500).json({ error: e.message });
+  }
+}
