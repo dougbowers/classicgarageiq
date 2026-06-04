@@ -1,0 +1,560 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GarageIQ — Classic car intelligence</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<style>
+  :root {
+    --bg: #F5F4F0;
+    --surface: #FFFFFF;
+    --surface2: #EEEDE9;
+    --text: #1a1a1a;
+    --text2: #6b6a66;
+    --border: rgba(0,0,0,0.1);
+    --border2: rgba(0,0,0,0.18);
+    --gold: #E8C97E;
+    --gold-dark: #412402;
+    --black: #1a1a1a;
+    --green: #3B6D11;
+    --green-bg: #EAF3DE;
+    --amber: #854F0B;
+    --amber-bg: #FAEEDA;
+    --red: #A32D2D;
+    --red-bg: #FCEBEB;
+    --radius: 12px;
+    --radius-sm: 8px;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #111110;
+      --surface: #1c1c1a;
+      --surface2: #252523;
+      --text: #e8e6de;
+      --text2: #888780;
+      --border: rgba(255,255,255,0.1);
+      --border2: rgba(255,255,255,0.18);
+    }
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
+  a { color: inherit; }
+
+  /* Layout */
+  .topbar { background: var(--black); padding: 0 1.5rem; display: flex; align-items: center; justify-content: space-between; height: 56px; position: sticky; top: 0; z-index: 100; }
+  .logo { display: flex; align-items: center; gap: 10px; text-decoration: none; }
+  .logo-mark { width: 30px; height: 30px; background: var(--gold); border-radius: 7px; display: flex; align-items: center; justify-content: center; }
+  .logo-mark i { font-size: 16px; color: var(--black); }
+  .logo-name { font-size: 17px; font-weight: 500; color: #fff; letter-spacing: -0.3px; }
+  .topbar-right { display: flex; align-items: center; gap: 10px; }
+  .pro-badge { background: var(--gold); color: var(--gold-dark); font-size: 11px; font-weight: 500; padding: 3px 9px; border-radius: 20px; }
+  .upgrade-btn { background: none; border: 1px solid rgba(255,255,255,0.2); color: #fff; padding: 6px 14px; border-radius: var(--radius-sm); font-size: 13px; cursor: pointer; font-family: inherit; }
+  .upgrade-btn:hover { background: rgba(255,255,255,0.08); }
+
+  .container { max-width: 760px; margin: 0 auto; padding: 1.5rem 1rem 4rem; }
+
+  /* Nav tabs */
+  .nav { display: flex; gap: 2px; background: var(--surface2); border-radius: var(--radius); padding: 4px; margin-bottom: 1.5rem; }
+  .nav-btn { flex: 1; padding: 8px 4px; border: none; background: none; border-radius: var(--radius-sm); font-size: 13px; font-weight: 500; color: var(--text2); cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 5px; font-family: inherit; transition: all .15s; }
+  .nav-btn.active { background: var(--surface); color: var(--text); box-shadow: 0 1px 3px rgba(0,0,0,0.08); }
+  .nav-btn:hover:not(.active) { color: var(--text); }
+  .nav-btn i { font-size: 15px; }
+
+  /* Tab panels */
+  .tab { display: none; }
+  .tab.active { display: block; }
+
+  /* Cards */
+  .card { background: var(--surface); border: 0.5px solid var(--border); border-radius: var(--radius); padding: 1.25rem; margin-bottom: 1rem; }
+
+  /* Metrics grid */
+  .metrics { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 1rem; }
+  @media (max-width: 520px) { .metrics { grid-template-columns: repeat(2, 1fr); } }
+  .metric { background: var(--surface2); border-radius: var(--radius-sm); padding: .85rem 1rem; }
+  .metric-label { font-size: 11px; text-transform: uppercase; letter-spacing: .06em; color: var(--text2); margin-bottom: 4px; }
+  .metric-value { font-size: 20px; font-weight: 500; color: var(--text); line-height: 1; }
+  .metric-value.up { color: var(--green); }
+  .metric-value.down { color: var(--red); }
+  .metric-sub { font-size: 11px; color: var(--text2); margin-top: 3px; }
+
+  /* Search section */
+  .search-grid { display: grid; grid-template-columns: 1fr 1fr 1fr auto; gap: 8px; align-items: end; margin-bottom: 1rem; }
+  @media (max-width: 560px) { .search-grid { grid-template-columns: 1fr 1fr; } .search-grid .analyze-btn { grid-column: span 2; justify-content: center; } }
+  .field label { font-size: 11px; text-transform: uppercase; letter-spacing: .06em; color: var(--text2); display: block; margin-bottom: 5px; font-weight: 500; }
+  .field input { width: 100%; padding: 9px 12px; border: 0.5px solid var(--border2); border-radius: var(--radius-sm); background: var(--surface2); color: var(--text); font-size: 14px; font-family: inherit; outline: none; }
+  .field input:focus { border-color: var(--black); }
+  .analyze-btn { padding: 9px 18px; background: var(--black); color: var(--gold); border: none; border-radius: var(--radius-sm); font-size: 14px; font-weight: 500; cursor: pointer; font-family: inherit; display: flex; align-items: center; gap: 6px; white-space: nowrap; }
+  .analyze-btn:hover { background: #2a2a2a; }
+  .analyze-btn:disabled { opacity: .5; cursor: not-allowed; }
+
+  /* Pills */
+  .pills { display: flex; flex-wrap: wrap; gap: 6px; }
+  .pill { padding: 5px 12px; border: 0.5px solid var(--border2); border-radius: 20px; font-size: 12px; color: var(--text2); cursor: pointer; background: var(--surface); font-family: inherit; }
+  .pill:hover { background: var(--surface2); color: var(--text); }
+
+  /* Verdict badges */
+  .verdict-badge { display: inline-flex; align-items: center; gap: 4px; padding: 4px 10px; border-radius: 20px; font-size: 12px; font-weight: 500; }
+  .verdict-buy { background: var(--green-bg); color: var(--green); }
+  .verdict-watch { background: var(--amber-bg); color: var(--amber); }
+  .verdict-pass { background: var(--red-bg); color: var(--red); }
+
+  /* Factors */
+  .factors { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 1rem; }
+  @media (max-width: 480px) { .factors { grid-template-columns: 1fr; } }
+  .factor { display: flex; align-items: flex-start; gap: 8px; padding: .75rem; background: var(--surface2); border-radius: var(--radius-sm); }
+  .factor i { font-size: 16px; margin-top: 2px; flex-shrink: 0; }
+  .factor-text { font-size: 13px; color: var(--text); line-height: 1.5; }
+  .factor-label { font-size: 10px; text-transform: uppercase; letter-spacing: .05em; color: var(--text2); display: block; margin-bottom: 2px; }
+
+  /* Loading */
+  .loading { display: flex; align-items: center; gap: 10px; padding: 2rem; color: var(--text2); font-size: 14px; }
+  .spinner { width: 18px; height: 18px; border: 2px solid var(--border2); border-top-color: var(--text2); border-radius: 50%; animation: spin .7s linear infinite; flex-shrink: 0; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* Placeholder */
+  .placeholder { text-align: center; padding: 3rem 1rem; color: var(--text2); font-size: 14px; }
+  .placeholder i { font-size: 36px; display: block; margin-bottom: .75rem; opacity: .3; }
+
+  /* Garage */
+  .garage-item { display: flex; align-items: center; gap: 12px; padding: .9rem 0; border-bottom: 0.5px solid var(--border); }
+  .garage-item:last-child { border-bottom: none; }
+  .garage-icon { width: 38px; height: 38px; background: var(--surface2); border-radius: var(--radius-sm); display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+  .garage-icon i { font-size: 18px; color: var(--text2); }
+  .garage-info { flex: 1; min-width: 0; }
+  .garage-name { font-size: 14px; font-weight: 500; color: var(--text); }
+  .garage-meta { font-size: 12px; color: var(--text2); margin-top: 2px; }
+  .remove-btn { background: none; border: none; cursor: pointer; color: var(--text2); padding: 4px; }
+  .remove-btn:hover { color: var(--text); }
+
+  /* Countdown */
+  .countdown-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  @media (max-width: 480px) { .countdown-grid { grid-template-columns: 1fr; } }
+  .countdown-card { background: var(--surface2); border-radius: var(--radius-sm); padding: 1rem; }
+  .progress-bar { height: 6px; background: var(--border); border-radius: 3px; overflow: hidden; margin: .5rem 0; }
+  .progress-fill { height: 100%; border-radius: 3px; background: var(--black); }
+
+  /* News */
+  .news-item { padding: .9rem 0; border-bottom: 0.5px solid var(--border); display: flex; gap: 12px; align-items: flex-start; }
+  .news-item:last-child { border-bottom: none; }
+  .news-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--black); margin-top: 5px; flex-shrink: 0; }
+  .news-dot.hot { background: #D85A30; }
+  .news-dot.up { background: var(--green); }
+  .news-dot.down { background: var(--red); }
+  .news-tag { display: inline-block; padding: 2px 8px; border-radius: 20px; font-size: 11px; background: var(--surface2); color: var(--text2); margin-left: 6px; }
+
+  /* Save button */
+  .save-btn { padding: 5px 11px; background: var(--black); color: var(--gold); border: none; border-radius: var(--radius-sm); font-size: 12px; font-weight: 500; cursor: pointer; font-family: inherit; display: flex; align-items: center; gap: 4px; }
+  .save-btn:hover { background: #2a2a2a; }
+  .saved-tag { font-size: 12px; color: var(--text2); display: flex; align-items: center; gap: 4px; }
+
+  /* Section label */
+  .section-label { font-size: 11px; text-transform: uppercase; letter-spacing: .06em; color: var(--text2); margin-bottom: .75rem; font-weight: 500; }
+
+  /* Error box */
+  .err-box { background: var(--surface2); border-radius: var(--radius-sm); padding: 1rem; font-size: 13px; color: var(--text2); margin-top: .5rem; line-height: 1.5; }
+
+  /* Paywall banner */
+  .paywall { background: var(--surface2); border: 0.5px solid var(--border2); border-radius: var(--radius); padding: 1.25rem; text-align: center; margin-top: 1rem; }
+  .paywall h3 { font-size: 16px; font-weight: 500; color: var(--text); margin-bottom: .4rem; }
+  .paywall p { font-size: 13px; color: var(--text2); margin-bottom: 1rem; }
+  .paywall-btn { display: inline-flex; align-items: center; gap: 6px; padding: 10px 24px; background: var(--black); color: var(--gold); border: none; border-radius: var(--radius-sm); font-size: 14px; font-weight: 500; cursor: pointer; font-family: inherit; }
+  .paywall-btn:hover { background: #2a2a2a; }
+
+  /* Footer */
+  footer { text-align: center; padding: 2rem 1rem; font-size: 12px; color: var(--text2); }
+  footer a { color: var(--text2); text-decoration: underline; }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <a class="logo" href="#">
+    <div class="logo-mark"><i class="ti ti-steering-wheel"></i></div>
+    <span class="logo-name">GarageIQ</span>
+  </a>
+  <div class="topbar-right">
+    <span class="pro-badge" id="planBadge">Free</span>
+    <button class="upgrade-btn" onclick="showUpgrade()">Upgrade to Pro</button>
+  </div>
+</div>
+
+<div class="container">
+
+  <div class="nav">
+    <button class="nav-btn active" onclick="switchTab('analyze')"><i class="ti ti-search"></i> <span>Analyze</span></button>
+    <button class="nav-btn" onclick="switchTab('garage')"><i class="ti ti-garage"></i> <span>My garage</span></button>
+    <button class="nav-btn" onclick="switchTab('countdown')"><i class="ti ti-clock"></i> <span>Countdown</span></button>
+    <button class="nav-btn" onclick="switchTab('news')"><i class="ti ti-news"></i> <span>Market news</span></button>
+  </div>
+
+  <!-- ANALYZE TAB -->
+  <div id="tab-analyze" class="tab active">
+    <div class="card">
+      <div class="search-grid">
+        <div class="field"><label for="yr">Year</label><input type="text" id="yr" placeholder="e.g. 1969" maxlength="4"></div>
+        <div class="field"><label for="mk">Make</label><input type="text" id="mk" placeholder="e.g. Ford"></div>
+        <div class="field"><label for="mo">Model</label><input type="text" id="mo" placeholder="e.g. Mustang"></div>
+        <button class="analyze-btn" id="analyzeBtn" onclick="analyze()"><i class="ti ti-search"></i> Analyze</button>
+      </div>
+      <div class="pills">
+        <button class="pill" onclick="qs('1969','Chevrolet','Camaro')">1969 Camaro</button>
+        <button class="pill" onclick="qs('2001','BMW','M3')">2001 BMW M3</button>
+        <button class="pill" onclick="qs('1993','Mazda','RX-7')">1993 RX-7</button>
+        <button class="pill" onclick="qs('1990','Nissan','Skyline GT-R')">1990 Skyline GT-R</button>
+        <button class="pill" onclick="qs('1965','Ford','Mustang')">1965 Mustang</button>
+        <button class="pill" onclick="qs('1971','Plymouth','Cuda')">1971 Cuda</button>
+      </div>
+    </div>
+    <div id="analyzeResult">
+      <div class="placeholder"><i class="ti ti-car"></i>Enter a car above for an AI-powered investment outlook</div>
+    </div>
+  </div>
+
+  <!-- GARAGE TAB -->
+  <div id="tab-garage" class="tab">
+    <div id="garageMetrics" class="metrics" style="display:none"></div>
+    <div class="card">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem">
+        <span style="font-size:15px;font-weight:500">My collection</span>
+        <button class="analyze-btn" onclick="switchTab('analyze')" style="font-size:12px;padding:6px 12px"><i class="ti ti-plus"></i> Add car</button>
+      </div>
+      <div id="garageList">
+        <div class="placeholder" style="padding:2rem 1rem"><i class="ti ti-car-garage"></i>No cars yet — analyze a car and save it to your garage</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- COUNTDOWN TAB -->
+  <div id="tab-countdown" class="tab">
+    <div class="card">
+      <p style="font-size:13px;color:var(--text2);margin-bottom:1rem;line-height:1.6">Cars become import-eligible at 25 years old (2.5% duty vs 25%). The best buying windows open <strong style="color:var(--text)">2–3 years before eligibility</strong> — before prices spike.</p>
+      <div class="countdown-grid" id="countdownGrid"></div>
+    </div>
+  </div>
+
+  <!-- NEWS TAB -->
+  <div id="tab-news" class="tab">
+    <div class="metrics">
+      <div class="metric"><div class="metric-label">Market index</div><div class="metric-value down">-10%</div><div class="metric-sub">vs 2024</div></div>
+      <div class="metric"><div class="metric-label">JDM segment</div><div class="metric-value up">+18%</div><div class="metric-sub">YTD 2026</div></div>
+      <div class="metric"><div class="metric-label">Auction volume</div><div class="metric-value">$4.8B</div><div class="metric-sub">2025 total</div></div>
+      <div class="metric"><div class="metric-label">Models trending up</div><div class="metric-value">8%</div><div class="metric-sub">of tracked cars</div></div>
+    </div>
+    <div class="card">
+      <div class="section-label">Latest market intelligence</div>
+      <div id="newsFeed"></div>
+    </div>
+    <div class="card">
+      <div class="section-label">Segment performance — 2025</div>
+      <div style="position:relative;width:100%;height:220px">
+        <canvas id="segChart" role="img" aria-label="Segment performance 2025: JDM +18%, Trucks +11%, Modern +9%, Euro +3%, Muscle -12%, Traditional -15%"></canvas>
+      </div>
+    </div>
+  </div>
+
+</div><!-- end container -->
+
+<footer>
+  <p>GarageIQ &copy; 2026 &nbsp;·&nbsp; <a href="#">Privacy</a> &nbsp;·&nbsp; <a href="#">Terms</a> &nbsp;·&nbsp; Built with the Anthropic API</p>
+  <p style="margin-top:.5rem;font-size:11px">Analysis is for informational purposes only and does not constitute financial advice.</p>
+</footer>
+
+<script>
+// ─── Config ───────────────────────────────────────────────────────────
+// IMPORTANT: Replace this with your server-side API proxy URL.
+// Never put your real Anthropic API key directly here in production.
+// For local testing only, you can temporarily use: https://api.anthropic.com/v1/messages
+// and set your key in the API_KEY variable below.
+const API_ENDPOINT = '/.netlify/functions/analyze'; // your serverless proxy
+const API_KEY = ''; // leave blank when using a proxy; set only for local testing
+
+// ─── State ────────────────────────────────────────────────────────────
+let garage = JSON.parse(localStorage.getItem('giq_garage') || '[]');
+let searchCount = parseInt(localStorage.getItem('giq_searches') || '0');
+const FREE_LIMIT = 3;
+let isPro = localStorage.getItem('giq_pro') === 'true';
+
+function saveGarageToStorage() {
+  localStorage.setItem('giq_garage', JSON.stringify(garage));
+}
+
+// ─── Tab switching ─────────────────────────────────────────────────────
+function switchTab(id) {
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('tab-' + id).classList.add('active');
+  const idx = ['analyze','garage','countdown','news'].indexOf(id);
+  document.querySelectorAll('.nav-btn')[idx].classList.add('active');
+  if (id === 'garage') renderGarage();
+  if (id === 'countdown') renderCountdown();
+  if (id === 'news') renderNews();
+}
+
+// ─── Quick search ──────────────────────────────────────────────────────
+function qs(y, m, mo) {
+  document.getElementById('yr').value = y;
+  document.getElementById('mk').value = m;
+  document.getElementById('mo').value = mo;
+  analyze();
+}
+
+// ─── Analyze ──────────────────────────────────────────────────────────
+async function analyze() {
+  const yr = document.getElementById('yr').value.trim();
+  const mk = document.getElementById('mk').value.trim();
+  const mo = document.getElementById('mo').value.trim();
+  if (!yr || !mk || !mo) return;
+
+  if (!isPro && searchCount >= FREE_LIMIT) {
+    document.getElementById('analyzeResult').innerHTML = `
+      <div class="paywall">
+        <h3>You've used your 3 free analyses today</h3>
+        <p>Upgrade to Pro for unlimited searches, saved garage, and weekly market digests.</p>
+        <button class="paywall-btn" onclick="showUpgrade()"><i class="ti ti-rocket"></i> Upgrade to Pro — $4.99/mo</button>
+      </div>`;
+    return;
+  }
+
+  const btn = document.getElementById('analyzeBtn');
+  btn.disabled = true;
+  document.getElementById('analyzeResult').innerHTML = `<div class="loading"><div class="spinner"></div>Analyzing ${yr} ${mk} ${mo}...</div>`;
+
+  const systemPrompt = `You are a classic car investment analyst with deep knowledge of auction results, collector trends, and market data through 2026. Always respond with ONLY a valid JSON object. No explanation, no markdown, no preamble.`;
+  const userPrompt = `Analyze the ${yr} ${mk} ${mo} as a collectible investment in 2026. Return exactly this JSON:
+{"verdict":"BUY","score":7,"currentValue":"$28,000-$45,000","trend5yr":"+15%","demand":"High","rarity":"Moderate","summary":"Two or three sentences about investment outlook.","bullCase":"One positive factor.","bearCase":"One risk factor.","buyerTip":"One actionable tip.","segment":"American Muscle","priceHistory":[{"year":2020,"val":25000},{"year":2021,"val":30000},{"year":2022,"val":38000},{"year":2023,"val":36000},{"year":2024,"val":34000},{"year":2025,"val":37000}]}
+Replace all values with accurate data for the ${yr} ${mk} ${mo}. verdict must be BUY, WATCH, or PASS. score 1-10. priceHistory vals are integers (midpoint USD).`;
+
+  try {
+    let resp;
+    if (API_KEY) {
+      resp = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-api-key': API_KEY,
+          'anthropic-version': '2023-06-01',
+          'anthropic-dangerous-direct-browser-access': 'true'
+        },
+        body: JSON.stringify({ model: 'claude-sonnet-4-5', max_tokens: 1024, system: systemPrompt, messages: [{ role: 'user', content: userPrompt }] })
+      });
+    } else {
+      resp = await fetch(API_ENDPOINT, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ year: yr, make: mk, model: mo })
+      });
+    }
+    if (!resp.ok) throw new Error('API error ' + resp.status);
+    const data = await resp.json();
+    const raw = API_KEY ? (data.content && data.content[0] && data.content[0].text) : data.result;
+    if (!raw) throw new Error('No content returned');
+    const cleaned = raw.replace(/```json/g,'').replace(/```/g,'').trim();
+    const match = cleaned.match(/\{[\s\S]*\}/);
+    if (!match) throw new Error('No JSON found');
+    const r = JSON.parse(match[0]);
+    searchCount++;
+    localStorage.setItem('giq_searches', searchCount);
+    renderAnalyze(yr, mk, mo, r);
+  } catch(e) {
+    document.getElementById('analyzeResult').innerHTML = `
+      <div class="card">
+        <div style="display:flex;align-items:center;gap:8px;font-size:14px;font-weight:500;margin-bottom:.5rem;color:var(--red)"><i class="ti ti-alert-circle" style="font-size:16px"></i>Unable to load analysis</div>
+        <div class="err-box">Could not reach the API. If you're running this locally, open the file, set your <code>API_KEY</code> in the script, or configure your server proxy at <code>API_ENDPOINT</code>.<br><br>Error: ${e.message}</div>
+      </div>`;
+  }
+  btn.disabled = false;
+}
+
+function renderAnalyze(yr, mk, mo, r) {
+  const vc = r.verdict==='BUY'?'verdict-buy':r.verdict==='WATCH'?'verdict-watch':'verdict-pass';
+  const vi = r.verdict==='BUY'?'ti-trending-up':r.verdict==='WATCH'?'ti-eye':'ti-trending-down';
+  const sc = r.score>=7?'up':r.score>=5?'':'down';
+  const tc = r.trend5yr&&r.trend5yr.startsWith('+')?'up':'down';
+  const saved = garage.find(g=>g.yr===yr&&g.mk===mk&&g.mo===mo);
+  const chartId = 'ph_' + Math.random().toString(36).slice(2,8);
+  const remaining = isPro ? '∞' : Math.max(0, FREE_LIMIT - searchCount);
+
+  document.getElementById('analyzeResult').innerHTML = `
+    <div class="metrics">
+      <div class="metric"><div class="metric-label">Score</div><div class="metric-value ${sc}">${r.score}<span style="font-size:13px;font-weight:400">/10</span></div><div class="metric-sub">${r.segment||''}</div></div>
+      <div class="metric"><div class="metric-label">Est. value</div><div class="metric-value" style="font-size:13px;line-height:1.4">${r.currentValue}</div><div class="metric-sub">current market</div></div>
+      <div class="metric"><div class="metric-label">5-yr trend</div><div class="metric-value ${tc}">${r.trend5yr}</div><div class="metric-sub">estimated</div></div>
+      <div class="metric"><div class="metric-label">Demand</div><div class="metric-value" style="font-size:14px">${r.demand}</div><div class="metric-sub">Rarity: ${r.rarity}</div></div>
+    </div>
+    <div class="card">
+      <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:.85rem">
+        <span style="font-size:15px;font-weight:500">${yr} ${mk} ${mo}</span>
+        <div style="display:flex;align-items:center;gap:8px">
+          <span class="verdict-badge ${vc}"><i class="ti ${vi}" style="font-size:12px"></i> ${r.verdict}</span>
+          ${saved
+            ? '<span class="saved-tag"><i class="ti ti-check" style="font-size:12px"></i> Saved</span>'
+            : `<button class="save-btn" onclick="saveToGarage('${yr}','${mk}','${(mo||'').replace(/'/g,"\\'")}',${r.score},'${r.verdict}','${(r.currentValue||'').replace(/'/g,"\\'")}','${(r.segment||'').replace(/'/g,"\\'")}',this)"><i class="ti ti-plus"></i> Save</button>`
+          }
+        </div>
+      </div>
+      <p style="font-size:14px;line-height:1.7;color:var(--text)">${r.summary}</p>
+      <div class="factors">
+        <div class="factor"><i class="ti ti-trending-up" style="color:var(--green)"></i><div class="factor-text"><span class="factor-label">Bull case</span>${r.bullCase}</div></div>
+        <div class="factor"><i class="ti ti-alert-triangle" style="color:var(--amber)"></i><div class="factor-text"><span class="factor-label">Bear case</span>${r.bearCase}</div></div>
+        <div class="factor" style="grid-column:span 2"><i class="ti ti-bulb" style="color:#185FA5"></i><div class="factor-text"><span class="factor-label">Buyer tip</span>${r.buyerTip}</div></div>
+      </div>
+      ${r.priceHistory&&r.priceHistory.length ? `
+        <div style="margin-top:1.25rem">
+          <div class="section-label">Estimated price history</div>
+          <div style="position:relative;width:100%;height:160px"><canvas id="${chartId}" role="img" aria-label="Price history for ${yr} ${mk} ${mo}"></canvas></div>
+        </div>` : ''}
+    </div>
+    ${!isPro ? `<p style="text-align:center;font-size:12px;color:var(--text2);margin-top:.5rem">${remaining} free ${remaining===1?'search':'searches'} remaining today · <a href="#" onclick="showUpgrade();return false;" style="color:var(--text);text-decoration:underline">Upgrade for unlimited</a></p>` : ''}
+  `;
+
+  if (r.priceHistory && r.priceHistory.length) {
+    setTimeout(()=>{
+      const ctx = document.getElementById(chartId);
+      if (!ctx) return;
+      new Chart(ctx, {
+        type: 'line',
+        data: { labels: r.priceHistory.map(p=>p.year), datasets: [{ label: 'Est. value', data: r.priceHistory.map(p=>p.val), borderColor: '#1a1a1a', backgroundColor: 'rgba(26,26,26,0.07)', borderWidth: 2, pointRadius: 3, pointBackgroundColor: '#1a1a1a', tension: 0.3, fill: true }] },
+        options: { responsive:true, maintainAspectRatio:false, plugins:{legend:{display:false}}, scales:{ y:{ticks:{callback:v=>'$'+Math.round(v/1000)+'k',font:{size:11}},grid:{color:'rgba(128,128,128,0.1)'},border:{display:false}}, x:{ticks:{font:{size:11}},grid:{display:false}} } }
+      });
+    }, 200);
+  }
+}
+
+// ─── Garage ────────────────────────────────────────────────────────────
+function saveToGarage(yr, mk, mo, score, verdict, value, segment, btn) {
+  if (garage.find(g=>g.yr===yr&&g.mk===mk&&g.mo===mo)) return;
+  garage.push({ yr, mk, mo, score, verdict, value, segment });
+  saveGarageToStorage();
+  if (btn) btn.outerHTML = '<span class="saved-tag"><i class="ti ti-check" style="font-size:12px"></i> Saved</span>';
+}
+
+function removeGarage(i) {
+  garage.splice(i, 1);
+  saveGarageToStorage();
+  renderGarage();
+}
+
+function renderGarage() {
+  const el = document.getElementById('garageList');
+  const me = document.getElementById('garageMetrics');
+  if (!garage.length) {
+    el.innerHTML = '<div class="placeholder" style="padding:2rem 1rem"><i class="ti ti-car-garage"></i>No cars yet — analyze a car and save it</div>';
+    me.style.display = 'none'; return;
+  }
+  const avg = (garage.reduce((a,g)=>a+g.score,0)/garage.length).toFixed(1);
+  const buys = garage.filter(g=>g.verdict==='BUY').length;
+  me.style.display = 'grid';
+  me.innerHTML = `
+    <div class="metric"><div class="metric-label">Cars tracked</div><div class="metric-value">${garage.length}</div></div>
+    <div class="metric"><div class="metric-label">Avg score</div><div class="metric-value">${avg}<span style="font-size:12px;font-weight:400">/10</span></div></div>
+    <div class="metric"><div class="metric-label">Buy ratings</div><div class="metric-value up">${buys}</div></div>
+    <div class="metric"><div class="metric-label">Watch / pass</div><div class="metric-value">${garage.length-buys}</div></div>`;
+  el.innerHTML = garage.map((g,i) => {
+    const col = g.verdict==='BUY'?'var(--green)':g.verdict==='WATCH'?'var(--amber)':'var(--red)';
+    return `<div class="garage-item">
+      <div class="garage-icon"><i class="ti ti-car"></i></div>
+      <div class="garage-info">
+        <div class="garage-name">${g.yr} ${g.mk} ${g.mo}</div>
+        <div class="garage-meta">${g.segment||'Classic'} · ${g.value}</div>
+      </div>
+      <div style="text-align:right;flex-shrink:0">
+        <div style="font-size:16px;font-weight:500;color:${col}">${g.score}/10</div>
+        <div style="font-size:11px;color:var(--text2)">${g.verdict}</div>
+      </div>
+      <button class="remove-btn" onclick="removeGarage(${i})" aria-label="Remove"><i class="ti ti-x" style="font-size:14px"></i></button>
+    </div>`;
+  }).join('');
+}
+
+// ─── Countdown ─────────────────────────────────────────────────────────
+const countdownCars = [
+  {name:'Honda S2000 AP1',year:2001,segment:'JDM',reason:'Iconic roadster, already appreciating fast'},
+  {name:'BMW M3 E46',year:2001,segment:'Euro sport',reason:'Most coveted E46, limited clean supply'},
+  {name:'Nissan Skyline R34 GT-R',year:2002,segment:'JDM',reason:'Legend status, values skyrocketing'},
+  {name:'Ferrari 360 Modena',year:2001,segment:'Italian exotic',reason:'Entry Ferrari, rising quickly'},
+  {name:'Ford Lightning SVT',year:2001,segment:'American truck',reason:'Trucks hot with younger buyers'},
+  {name:'Acura NSX Type S',year:2001,segment:'JDM exotic',reason:'Final year, extremely rare'},
+];
+
+function renderCountdown() {
+  const currentYear = new Date().getFullYear();
+  document.getElementById('countdownGrid').innerHTML = countdownCars.map(c => {
+    const eligible = c.year + 25;
+    const yearsLeft = Math.max(0, eligible - currentYear);
+    const progress = Math.min(100, Math.round(((25 - yearsLeft) / 25) * 100));
+    const daysLeft = yearsLeft > 0 ? Math.round(yearsLeft * 365).toLocaleString() : 0;
+    return `<div class="countdown-card">
+      <div style="font-size:14px;font-weight:500;color:var(--text);margin-bottom:2px">${c.name}</div>
+      <div style="font-size:12px;color:var(--text2);margin-bottom:.5rem">${c.year} · ${c.segment}</div>
+      <div class="progress-bar"><div class="progress-fill" style="width:${progress}%"></div></div>
+      <div style="font-size:13px;font-weight:500;color:var(--text)">${yearsLeft===0?'Eligible now!':daysLeft+' days left'}</div>
+      <div style="font-size:11px;color:var(--text2);margin-top:4px">${c.reason}</div>
+    </div>`;
+  }).join('');
+}
+
+// ─── News ──────────────────────────────────────────────────────────────
+const newsItems = [
+  {dot:'up',headline:'JDM values surge as 25-year rule opens doors to 2001 imports',meta:'Jun 2026',tag:'JDM'},
+  {dot:'hot',headline:'Hagerty: classic market poised for strong 2026 on generational handover',meta:'Dec 2025',tag:'Market'},
+  {dot:'up',headline:'2001 BMW M3 E46 and Honda S2000 AP1 become import-eligible this year',meta:'Jan 2026',tag:'Import'},
+  {dot:'down',headline:'Traditional American muscle softens — 1965 Mustang GT down 12% from peak',meta:'Mar 2026',tag:'Muscle'},
+  {dot:'up',headline:'Bring a Trailer auction volume hits record high, online sales up 10%',meta:'Feb 2026',tag:'Auction'},
+  {dot:'hot',headline:'Restomods and modernized classics attract younger collectors aged 25–40',meta:'Apr 2026',tag:'Trend'},
+  {dot:'down',headline:'Jaguar E-Type faces 15–20% price pressure as boomer sellers exit market',meta:'May 2026',tag:'Europe'},
+  {dot:'up',headline:'Classic imports now face only 2.5% duty vs 25% on new vehicles',meta:'Jan 2026',tag:'Tariff'},
+];
+
+function renderNews() {
+  document.getElementById('newsFeed').innerHTML = newsItems.map(n => `
+    <div class="news-item">
+      <div class="news-dot ${n.dot}"></div>
+      <div style="flex:1">
+        <div style="font-size:14px;color:var(--text);line-height:1.4">${n.headline}<span class="news-tag">${n.tag}</span></div>
+        <div style="font-size:12px;color:var(--text2);margin-top:3px">${n.meta}</div>
+      </div>
+    </div>`).join('');
+
+  setTimeout(()=>{
+    const ctx = document.getElementById('segChart');
+    if (!ctx || ctx._built) return;
+    ctx._built = true;
+    const vals = [-15,-12,3,9,11,18];
+    const colors = vals.map(v=>v>=0?'rgba(59,109,17,0.85)':'rgba(163,45,45,0.85)');
+    new Chart(ctx, {
+      type:'bar',
+      data:{labels:['Traditional','Muscle','Euro sport','Modern classic','Trucks','JDM'],datasets:[{data:vals,backgroundColor:colors,borderRadius:4,borderSkipped:false}]},
+      options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{y:{ticks:{callback:v=>(v>0?'+':'')+v+'%',font:{size:11}},grid:{color:'rgba(128,128,128,0.1)'},border:{display:false}},x:{ticks:{font:{size:11}},grid:{display:false}}}}
+    });
+  }, 200);
+}
+
+// ─── Upgrade modal ─────────────────────────────────────────────────────
+function showUpgrade() {
+  // In production: replace with Stripe Checkout redirect
+  // e.g. window.location.href = 'https://buy.stripe.com/YOUR_LINK';
+  alert('Upgrade flow: Connect Stripe Checkout here.\n\nReplace this alert with:\nwindow.location.href = "https://buy.stripe.com/YOUR_LINK"');
+}
+
+// ─── Init ──────────────────────────────────────────────────────────────
+if (isPro) document.getElementById('planBadge').textContent = 'Pro';
+renderCountdown();
+
+['yr','mk','mo'].forEach(id => {
+  document.getElementById(id).addEventListener('keydown', e => { if (e.key==='Enter') analyze(); });
+});
+
+// Reset daily search count at midnight
+const today = new Date().toDateString();
+if (localStorage.getItem('giq_search_date') !== today) {
+  localStorage.setItem('giq_searches', '0');
+  localStorage.setItem('giq_search_date', today);
+  searchCount = 0;
+}
+</script>
+</body>
+</html>
