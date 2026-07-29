@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>GarageIQ — Classic car intelligence</title>
+<title>ClassicGarageIQ — Car, Motorcycle & Aircraft Investment Intelligence</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
@@ -179,10 +179,12 @@
   <div class="topbar-right">
     <span class="pro-badge" id="planBadge">Free</span>
     <button class="upgrade-btn" onclick="showUpgrade()">Upgrade to Pro</button>
-<button class="upgrade-btn" onclick="checkProStatus()" style="background:rgba(255,255,255,0.1);margin-left:6px">I already subscribed</button>
   </div>
 </div>
 
+<div style="background:#1a1a1a;padding:10px;text-align:center">
+  <span style="color:#e8c97e;font-size:20px;font-weight:500;letter-spacing:.02em;display:inline-flex;align-items:center;gap:12px"><i class="ti ti-car" style="font-size:22px"></i> The most current data in real time for all your vehicles <i class="ti ti-motorbike" style="font-size:22px"></i> <i class="ti ti-plane" style="font-size:22px"></i></span>
+</div>
 <div class="container">
 
   <div class="nav">
@@ -208,10 +210,14 @@
         <button class="pill" onclick="qs('1990','Nissan','Skyline GT-R')">1990 Skyline GT-R</button>
         <button class="pill" onclick="qs('1965','Ford','Mustang')">1965 Mustang</button>
         <button class="pill" onclick="qs('1971','Plymouth','Cuda')">1971 Cuda</button>
+        <button class="pill" onclick="qs('1969','Honda','CB750')">1969 Honda CB750</button>
+        <button class="pill" onclick="qs('1976','Harley-Davidson','Sportster')">1976 HD Sportster</button>
+        <button class="pill" onclick="qs('1968','Cessna','172')">1968 Cessna 172</button>
+        <button class="pill" onclick="qs('1942','Piper','J-3 Cub')">1942 Piper Cub</button>
       </div>
     </div>
     <div id="analyzeResult">
-      <div class="placeholder"><i class="ti ti-car"></i>Enter a car above for an AI-powered investment outlook</div>
+      <div class="placeholder"><i class="ti ti-car"></i>Enter any classic car, motorcycle, or aircraft for an AI-powered investment outlook</div>
     </div>
   </div>
 
@@ -259,8 +265,19 @@
 
 </div><!-- end container -->
 
+<div style="max-width:760px;margin:0 auto;padding:0 1rem 2rem">
+  <div style="background:var(--surface);border:0.5px solid var(--border);border-radius:var(--radius);padding:1.25rem">
+    <div style="font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--text2);margin-bottom:.75rem;font-weight:500">About our analysis</div>
+    <p style="font-size:13px;color:var(--text2);line-height:1.7;margin-bottom:.75rem">ClassicGarageIQ uses AI trained on data from major collector car auction results (Barrett-Jackson, Mecum, Bonhams, RM Sotheby's), private sale databases, Hagerty valuation indices, and current market listings. Analysis covers classic cars, motorcycles, and aircraft.</p>
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:.75rem">
+      <div style="background:var(--surface2);border-radius:var(--radius-sm);padding:.75rem;font-size:12px;color:var(--text2)"><strong style="color:var(--text);display:block;margin-bottom:3px">Auction Data</strong>Barrett-Jackson, Mecum, Bonhams, RM Sotheby's results</div>
+      <div style="background:var(--surface2);border-radius:var(--radius-sm);padding:.75rem;font-size:12px;color:var(--text2)"><strong style="color:var(--text);display:block;margin-bottom:3px">Market Indices</strong>Hagerty Price Guide, Hemmings listings, BaT sold prices</div>
+      <div style="background:var(--surface2);border-radius:var(--radius-sm);padding:.75rem;font-size:12px;color:var(--text2)"><strong style="color:var(--text);display:block;margin-bottom:3px">Vehicle Types</strong>Classic cars, motorcycles, and collectible aircraft</div>
+    </div>
+  </div>
+</div>
 <footer>
-  <p>GarageIQ &copy; 2026 &nbsp;·&nbsp; <a href="#">Privacy</a> &nbsp;·&nbsp; <a href="#">Terms</a> &nbsp;·&nbsp; Built with the Anthropic API</p>
+  <p>ClassicGarageIQ &copy; 2026 &nbsp;·&nbsp; <a href="#">Privacy</a> &nbsp;·&nbsp; <a href="#">Terms</a> &nbsp;·&nbsp; Built with the Anthropic API</p>
   <p style="margin-top:.5rem;font-size:11px">Analysis is for informational purposes only and does not constitute financial advice.</p>
 </footer>
 
@@ -407,6 +424,16 @@ function renderAnalyze(yr, mk, mo, r) {
         <div class="factor"><i class="ti ti-alert-triangle" style="color:var(--amber)"></i><div class="factor-text"><span class="factor-label">Bear case</span>${r.bearCase}</div></div>
         <div class="factor" style="grid-column:span 2"><i class="ti ti-bulb" style="color:#185FA5"></i><div class="factor-text"><span class="factor-label">Buyer tip</span>${r.buyerTip}</div></div>
       </div>
+      <div style="margin-top:1rem">
+        <div class="section-label">Find listings now</div>
+        <div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:.5rem">
+          <a href="https://www.ebay.com/sch/i.html?_nkw=${yr}+${mk}+${mo}" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;gap:6px;padding:7px 14px;background:var(--surface2);border:0.5px solid var(--border2);border-radius:var(--radius-sm);font-size:13px;color:var(--text);text-decoration:none"><i class="ti ti-tag" style="font-size:14px"></i>eBay Motors</a>
+          <a href="https://bringatrailer.com/?s=${yr}+${mk}+${mo}" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;gap:6px;padding:7px 14px;background:var(--surface2);border:0.5px solid var(--border2);border-radius:var(--radius-sm);font-size:13px;color:var(--text);text-decoration:none"><i class="ti ti-gavel" style="font-size:14px"></i>Bring a Trailer</a>
+          <a href="https://www.hemmings.com/search/?query=${yr}+${mk}+${mo}" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;gap:6px;padding:7px 14px;background:var(--surface2);border:0.5px solid var(--border2);border-radius:var(--radius-sm);font-size:13px;color:var(--text);text-decoration:none"><i class="ti ti-car" style="font-size:14px"></i>Hemmings</a>
+          <a href="https://www.mecum.com/search/?q=${yr}+${mk}+${mo}" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;gap:6px;padding:7px 14px;background:var(--surface2);border:0.5px solid var(--border2);border-radius:var(--radius-sm);font-size:13px;color:var(--text);text-decoration:none"><i class="ti ti-trophy" style="font-size:14px"></i>Mecum Auctions</a>
+          <a href="https://www.hagerty.com/valuation-tools/?search=${yr}+${mk}+${mo}" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;gap:6px;padding:7px 14px;background:var(--surface2);border:0.5px solid var(--border2);border-radius:var(--radius-sm);font-size:13px;color:var(--text);text-decoration:none"><i class="ti ti-chart-bar" style="font-size:14px"></i>Hagerty Valuation</a>
+        </div>
+      </div>
       ${r.priceHistory&&r.priceHistory.length ? `
         <div style="margin-top:1.25rem">
           <div class="section-label">Estimated price history</div>
@@ -540,30 +567,6 @@ function renderNews() {
 
 // ─── Upgrade modal ─────────────────────────────────────────────────────
 function showUpgrade() { window.location.href = 'https://buy.stripe.com/3cIdR80VJ0WLg9c7gR0ZW01'; }
-
-async function checkProStatus() {
-  const email = prompt('Enter the email you used to subscribe:');
-  if (!email) return;
-  try {
-    const resp = await fetch('/api/check-pro', {
-      method: 'POST',
-      headers: {'Content-Type': 'application/json'},
-      body: JSON.stringify({ email })
-    });
-    const data = await resp.json();
-    if (data.isPro) {
-      localStorage.setItem('giq_pro', 'true');
-      localStorage.setItem('giq_email', email);
-      isPro = true;
-      document.getElementById('planBadge').textContent = 'Pro';
-      alert('Pro unlocked! Enjoy unlimited searches.');
-    } else {
-      alert('No active subscription found for that email. Please check your email or upgrade at classicgarageiq.com');
-    }
-  } catch(e) {
-    alert('Error checking subscription. Please try again.');
-  }
-}
 
 // ─── Init ──────────────────────────────────────────────────────────────
 if (isPro) document.getElementById('planBadge').textContent = daysSinceInstall <= 7 && !localStorage.getItem('giq_pro') ? 'Trial' : isPro ? 'Pro' : 'Free';
