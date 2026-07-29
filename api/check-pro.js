@@ -10,20 +10,26 @@ export default async function handler(req, res) {
     const supabaseUrl = process.env.SUPABASE_URL;
     const supabaseKey = process.env.SUPABASE_ANON_KEY;
 
-    const response = await fetch(
-      `${supabaseUrl}/rest/v1/subscribers?email=eq.${encodeURIComponent(email)}&status=eq.active&select=email,status`,
-      {
-        headers: {
-          'apikey': supabaseKey,
-          'Authorization': `Bearer ${supabaseKey}`
-        }
+    const url = `${supabaseUrl}/rest/v1/subscribers?select=email,status&email=eq.${encodeURIComponent(email)}&status=eq.active`;
+    
+    const response = await fetch(url, {
+      method: 'GET',
+      headers: {
+        'apikey': supabaseKey,
+        'Authorization': `Bearer ${supabaseKey}`,
+        'Content-Type': 'application/json'
       }
-    );
+    });
 
-    const data = await response.json();
-    const isPro = data && data.length > 0;
-    res.status(200).json({ isPro });
+    const text = await response.text();
+    console.log('Supabase response:', text);
+    
+    const data = JSON.parse(text);
+    const isPro = Array.isArray(data) && data.length > 0;
+    
+    res.status(200).json({ isPro, debug: data });
   } catch(e) {
+    console.error(e);
     res.status(500).json({ isPro: false, error: e.message });
   }
 }
