@@ -440,7 +440,11 @@ function renderAnalyze(yr, mk, mo, r) {
           <span class="verdict-badge ${vc}"><i class="ti ${vi}" style="font-size:12px"></i> ${r.verdict}</span>
           ${saved
             ? '<span class="saved-tag"><i class="ti ti-check" style="font-size:12px"></i> Saved</span>'
-            : `<button class="save-btn" onclick="saveToGarage('${yr}','${mk}','${(mo||'').replace(/'/g,"\\'")}',${r.score},'${r.verdict}','${(r.currentValue||'').replace(/'/g,"\\'")}','${(r.segment||'').replace(/'/g,"\\'")}',this)"><i class="ti ti-plus"></i> Save</button>`
+            : `<button class="save-btn" id="saveBtn_${chartId}" onclick="saveToGarageFromBtn(this)"
+              data-yr="${yr}" data-mk="${mk}" data-mo="${(mo||'').replace(/"/g,'&quot;')}"
+              data-score="${r.score}" data-verdict="${r.verdict}"
+              data-value="${(r.currentValue||'').replace(/"/g,'&quot;')}"
+              data-segment="${(r.segment||'').replace(/"/g,'&quot;')}"><i class="ti ti-plus"></i> Save</button>`
           }
         </div>
       </div>
@@ -488,54 +492,44 @@ function renderAnalyze(yr, mk, mo, r) {
 // ─── Garage ────────────────────────────────────────────────────────────
 async function loadVehiclePhotos(chartId, yr, mk, mo) {
   const stripId = 'photoStrip_' + chartId;
+  const strip = document.getElementById(stripId);
+  if (!strip) return;
   try {
-    const searches = [
-      `${yr} ${mk} ${mo}`,
-      `${mk} ${mo} classic automobile`,
-      `${yr} ${mk} ${mo} vintage`
-    ];
+    // Use Wikimedia Commons API - search for vehicle images directly
+    const query = `${yr} ${mk} ${mo}`;
+    const resp = await fetch(
+      `https://commons.wikimedia.org/w/api.php?action=query&generator=search&gsrnamespace=6&gsrsearch=${encodeURIComponent(query)}&gsrlimit=3&prop=imageinfo&iiprop=url|thumburl&iiurlwidth=400&format=json&origin=*`
+    );
+    const data = await resp.json();
+    const pages = data?.query?.pages;
+    if (!pages) { strip.style.display='none'; return; }
+    
+    const imgs = Object.values(pages)
+      .map(p => p?.imageinfo?.[0]?.thumburl)
+      .filter(Boolean)
+      .slice(0, 3);
 
-    // Use Wikipedia image search for all 3 slots
-    const imgs = [];
-    for (const q of searches) {
-      try {
-        const resp = await fetch(
-          `https://en.wikipedia.org/w/api.php?action=query&list=search&srsearch=${encodeURIComponent(q)}&prop=pageimages&format=json&origin=*&srlimit=1`
-        );
-        const data = await resp.json();
-        const title = data?.query?.search?.[0]?.title;
-        if (title) {
-          const imgResp = await fetch(
-            `https://en.wikipedia.org/w/api.php?action=query&titles=${encodeURIComponent(title)}&prop=pageimages&piprop=thumbnail&pithumbsize=400&format=json&origin=*`
-          );
-          const imgData = await imgResp.json();
-          const pages = imgData?.query?.pages || {};
-          const page = Object.values(pages)[0];
-          const src = page?.thumbnail?.source;
-          if (src) imgs.push(src);
-        }
-      } catch(e) {}
-    }
-
-    const strip = document.getElementById(stripId);
-    if (!strip) return;
-
-    if (imgs.length === 0) {
-      strip.style.display = 'none';
-      return;
-    }
-
-    // Fill to 3 slots — repeat last image if needed
-    while (imgs.length < 3) imgs.push(imgs[imgs.length - 1]);
+    if (imgs.length === 0) { strip.style.display='none'; return; }
+    while (imgs.length < 3) imgs.push(imgs[imgs.length-1]);
 
     strip.className = 'photo-strip';
-    strip.innerHTML = imgs.slice(0,3).map(src =>
-      `<img src="${src}" alt="${yr} ${mk} ${mo}" loading="lazy" onerror="this.style.display='none'">`
+    strip.innerHTML = imgs.map(src =>
+      `<img src="${src}" alt="${yr} ${mk} ${mo}" loading="lazy" onerror="this.parentElement.style.display='none'">`
     ).join('');
   } catch(e) {
-    const strip = document.getElementById(stripId);
-    if (strip) strip.style.display = 'none';
+    strip.style.display = 'none';
   }
+}
+
+function saveToGarageFromBtn(btn) {
+  const yr = btn.dataset.yr;
+  const mk = btn.dataset.mk;
+  const mo = btn.dataset.mo;
+  const score = parseInt(btn.dataset.score);
+  const verdict = btn.dataset.verdict;
+  const value = btn.dataset.value;
+  const segment = btn.dataset.segment;
+  saveToGarage(yr, mk, mo, score, verdict, value, segment, btn);
 }
 
 function saveToGarage(yr, mk, mo, score, verdict, value, segment, btn) {
