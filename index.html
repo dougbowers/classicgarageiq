@@ -528,6 +528,17 @@ function saveToGarage(yr, mk, mo, score, verdict, value, segment, btn) {
   if (btn) btn.outerHTML = '<span class="saved-tag"><i class="ti ti-check" style="font-size:12px"></i> Saved</span>';
 }
 
+function analyzeFromGarage(btn) {
+  const yr = btn.dataset.yr;
+  const mk = btn.dataset.mk;
+  const mo = btn.dataset.mo;
+  switchTab('analyze');
+  document.getElementById('yr').value = yr;
+  document.getElementById('mk').value = mk;
+  document.getElementById('mo').value = mo;
+  setTimeout(() => analyze(), 100);
+}
+
 function removeGarage(i) {
   garage.splice(i, 1);
   saveGarageToStorage();
