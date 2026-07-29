@@ -472,33 +472,48 @@ function renderAnalyze(yr, mk, mo, r) {
 async function loadVehiclePhotos(chartId, yr, mk, mo) {
   const stripId = 'photoStrip_' + chartId;
   try {
-    const query = encodeURIComponent(`${yr} ${mk} ${mo}`);
-    const resp = await fetch(
-      `https://en.wikipedia.org/w/api.php?action=query&titles=${query}&prop=pageimages&piprop=thumbnail|original&pithumbsize=400&format=json&origin=*`
-    );
-    const data = await resp.json();
-    const pages = data?.query?.pages || {};
-    const page = Object.values(pages)[0];
-    const wikiImg = page?.thumbnail?.source || page?.original?.source;
-
-    // Use Unsplash source as fallback for 3 photos
     const searches = [
       `${yr} ${mk} ${mo}`,
-      `${mk} ${mo} classic`,
-      `${yr} ${mk} ${mo} collector`
+      `${mk} ${mo} classic automobile`,
+      `${yr} ${mk} ${mo} vintage`
     ];
 
-    const imgs = searches.map(s => 
-      `https://source.unsplash.com/400x240/?${encodeURIComponent(s)}`
-    );
-
-    if (wikiImg) imgs[0] = wikiImg;
+    // Use Wikipedia image search for all 3 slots
+    const imgs = [];
+    for (const q of searches) {
+      try {
+        const resp = await fetch(
+          `https://en.wikipedia.org/w/api.php?action=query&list=search&srsearch=${encodeURIComponent(q)}&prop=pageimages&format=json&origin=*&srlimit=1`
+        );
+        const data = await resp.json();
+        const title = data?.query?.search?.[0]?.title;
+        if (title) {
+          const imgResp = await fetch(
+            `https://en.wikipedia.org/w/api.php?action=query&titles=${encodeURIComponent(title)}&prop=pageimages&piprop=thumbnail&pithumbsize=400&format=json&origin=*`
+          );
+          const imgData = await imgResp.json();
+          const pages = imgData?.query?.pages || {};
+          const page = Object.values(pages)[0];
+          const src = page?.thumbnail?.source;
+          if (src) imgs.push(src);
+        }
+      } catch(e) {}
+    }
 
     const strip = document.getElementById(stripId);
     if (!strip) return;
+
+    if (imgs.length === 0) {
+      strip.style.display = 'none';
+      return;
+    }
+
+    // Fill to 3 slots — repeat last image if needed
+    while (imgs.length < 3) imgs.push(imgs[imgs.length - 1]);
+
     strip.className = 'photo-strip';
-    strip.innerHTML = imgs.map(src => 
-      `<img src="${src}" alt="${yr} ${mk} ${mo}" loading="lazy" onerror="this.parentElement.innerHTML='<div class=\'photo-placeholder\'><i class=\'ti ti-photo\' style=\'font-size:20px;opacity:.3\'></i></div>'">`
+    strip.innerHTML = imgs.slice(0,3).map(src =>
+      `<img src="${src}" alt="${yr} ${mk} ${mo}" loading="lazy" onerror="this.style.display='none'">`
     ).join('');
   } catch(e) {
     const strip = document.getElementById(stripId);
@@ -542,7 +557,7 @@ function renderGarage() {
         <div class="garage-name">${g.yr} ${g.mk} ${g.mo}</div>
         <div class="garage-meta">${g.segment||'Classic'} · ${g.value}</div>
         <div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:6px">
-          <button onclick="analyzeFromGarage('${g.yr}','${g.mk.replace(/'/g,"\\'")}','${g.mo.replace(/'/g,"\\'")}');return false;" style="display:inline-flex;align-items:center;gap:4px;padding:4px 10px;background:var(--surface2);border:0.5px solid var(--border2);border-radius:20px;font-size:11px;color:var(--text);cursor:pointer;font-family:inherit"><i class="ti ti-refresh" style="font-size:12px"></i>Re-analyze</button>
+          <button onclick="analyzeFromGarage(this)" data-yr="${g.yr}" data-mk="${g.mk}" data-mo="${g.mo}" style="display:inline-flex;align-items:center;gap:4px;padding:4px 10px;background:var(--surface2);border:0.5px solid var(--border2);border-radius:20px;font-size:11px;color:var(--text);cursor:pointer;font-family:inherit"><i class="ti ti-refresh" style="font-size:12px"></i>Re-analyze</button>
           <a href="https://www.ebay.com/sch/i.html?_nkw=${g.yr}+${g.mk}+${g.mo}" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;gap:4px;padding:4px 10px;background:var(--surface2);border:0.5px solid var(--border2);border-radius:20px;font-size:11px;color:var(--text);text-decoration:none"><i class="ti ti-tag" style="font-size:12px"></i>eBay</a>
           <a href="https://bringatrailer.com/?s=${g.yr}+${g.mk}+${g.mo}" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;gap:4px;padding:4px 10px;background:var(--surface2);border:0.5px solid var(--border2);border-radius:20px;font-size:11px;color:var(--text);text-decoration:none"><i class="ti ti-gavel" style="font-size:12px"></i>BaT</a>
           <a href="https://www.hemmings.com/search/?query=${g.yr}+${g.mk}+${g.mo}" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;gap:4px;padding:4px 10px;background:var(--surface2);border:0.5px solid var(--border2);border-radius:20px;font-size:11px;color:var(--text);text-decoration:none"><i class="ti ti-car" style="font-size:12px"></i>Hemmings</a>
