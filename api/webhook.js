@@ -3,31 +3,69 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
-  const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
-  
-  let event;
   try {
-    event = req.body;
+    const event = req.body;
+    const { type, data } = event;
+    const obj = data?.object;
+
+    const supabaseUrl = process.env.SUPABASE_URL;
+    const supabaseKey = process.env.SUPABASE_ANON_KEY;
+
+    if (type === 'customer.subscription.created' && 
+        (obj?.status === 'active' || obj?.status === 'trialing')) {
+      await fetch(`${supabaseUrl}/rest/v1/subscribers`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'apikey': supabaseKey,
+          'Authorization': `Bearer ${supabaseKey}`,
+          'Prefer': 'resolution=merge-duplicates'
+        },
+        body: JSON.stringify({
+          email: obj?.customer_email || '',
+          stripe_customer_id: obj?.customer,
+          status: 'active'
+        })
+      });
+    }
+
+    if (type === 'invoice.payment_succeeded') {
+      const email = obj?.customer_email;
+      const customerId = obj?.customer;
+      if (email || customerId) {
+        await fetch(`${supabaseUrl}/rest/v1/subscribers`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'apikey': supabaseKey,
+            'Authorization': `Bearer ${supabaseKey}`,
+            'Prefer': 'resolution=merge-duplicates'
+          },
+          body: JSON.stringify({
+            email: email || '',
+            stripe_customer_id: customerId,
+            status: 'active'
+          })
+        });
+      }
+    }
+
+    if (type === 'customer.subscription.deleted') {
+      const customerId = obj?.customer;
+      await fetch(`${supabaseUrl}/rest/v1/subscribers?stripe_customer_id=eq.${customerId}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          'apikey': supabaseKey,
+          'Authorization': `Bearer ${supabaseKey}`
+        },
+        body: JSON.stringify({ status: 'cancelled' })
+      });
+    }
+
+    res.status(200).json({ received: true });
   } catch(e) {
-    return res.status(400).json({ error: e.message });
+    console.error('Webhook error:', e);
+    res.status(200).json({ received: true });
   }
-
-  const { type, data } = event;
-  const customer = data?.object?.customer;
-  const status = data?.object?.status;
-
-  if (type === 'customer.subscription.created' && 
-      (status === 'active' || status === 'trialing')) {
-    console.log('New Pro subscriber:', customer);
-  }
-
-  if (type === 'customer.subscription.deleted') {
-    console.log('Cancelled subscription:', customer);
-  }
-
-  if (type === 'invoice.payment_succeeded') {
-    console.log('Payment succeeded for:', customer);
-  }
-
-  res.status(200).json({ received: true });
 }
