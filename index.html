@@ -540,6 +540,30 @@ function renderNews() {
 // ─── Upgrade modal ─────────────────────────────────────────────────────
 function showUpgrade() { window.location.href = 'https://buy.stripe.com/3cIdR80VJ0WLg9c7gR0ZW01'; }
 
+async function checkProStatus() {
+  const email = prompt('Enter the email you used to subscribe:');
+  if (!email) return;
+  try {
+    const resp = await fetch('/api/check-pro', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({ email })
+    });
+    const data = await resp.json();
+    if (data.isPro) {
+      localStorage.setItem('giq_pro', 'true');
+      localStorage.setItem('giq_email', email);
+      isPro = true;
+      document.getElementById('planBadge').textContent = 'Pro';
+      alert('Pro unlocked! Enjoy unlimited searches.');
+    } else {
+      alert('No active subscription found for that email. Please check your email or upgrade at classicgarageiq.com');
+    }
+  } catch(e) {
+    alert('Error checking subscription. Please try again.');
+  }
+}
+
 // ─── Init ──────────────────────────────────────────────────────────────
 if (isPro) document.getElementById('planBadge').textContent = daysSinceInstall <= 7 && !localStorage.getItem('giq_pro') ? 'Trial' : isPro ? 'Pro' : 'Free';
 // badge already set';
