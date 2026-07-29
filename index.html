@@ -97,6 +97,10 @@
   .pill:hover { background: var(--surface2); color: var(--text); }
 
   /* Verdict badges */
+  .photo-strip { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; margin-bottom: 1rem; }
+  .photo-strip img { width: 100%; height: 120px; object-fit: cover; border-radius: var(--radius-sm); background: var(--surface2); }
+  .photo-strip-loading { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; margin-bottom: 1rem; }
+  .photo-placeholder { height: 120px; background: var(--surface2); border-radius: var(--radius-sm); display: flex; align-items: center; justify-content: center; color: var(--text2); font-size: 12px; }
   .verdict-badge { display: inline-flex; align-items: center; gap: 4px; padding: 4px 10px; border-radius: 20px; font-size: 12px; font-weight: 500; }
   .verdict-buy { background: var(--green-bg); color: var(--green); }
   .verdict-watch { background: var(--amber-bg); color: var(--amber); }
@@ -408,6 +412,11 @@ function renderAnalyze(yr, mk, mo, r) {
       <div class="metric"><div class="metric-label">Demand</div><div class="metric-value" style="font-size:14px">${r.demand}</div><div class="metric-sub">Rarity: ${r.rarity}</div></div>
     </div>
     <div class="card">
+      <div id="photoStrip_${chartId}" class="photo-strip-loading">
+        <div class="photo-placeholder"><i class="ti ti-photo" style="font-size:20px;opacity:.3"></i></div>
+        <div class="photo-placeholder"><i class="ti ti-photo" style="font-size:20px;opacity:.3"></i></div>
+        <div class="photo-placeholder"><i class="ti ti-photo" style="font-size:20px;opacity:.3"></i></div>
+      </div>
       <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:.85rem">
         <span style="font-size:15px;font-weight:500">${yr} ${mk} ${mo}</span>
         <div style="display:flex;align-items:center;gap:8px">
@@ -443,6 +452,9 @@ function renderAnalyze(yr, mk, mo, r) {
     ${!isPro ? `<p style="text-align:center;font-size:12px;color:var(--text2);margin-top:.5rem">${remaining} free ${remaining===1?'search':'searches'} remaining today · <a href="#" onclick="showUpgrade();return false;" style="color:var(--text);text-decoration:underline">Upgrade for unlimited</a></p>` : ''}
   `;
 
+  // Load photos via Wikimedia/Unsplash API
+  loadVehiclePhotos(chartId, yr, mk, mo);
+
   if (r.priceHistory && r.priceHistory.length) {
     setTimeout(()=>{
       const ctx = document.getElementById(chartId);
@@ -457,6 +469,43 @@ function renderAnalyze(yr, mk, mo, r) {
 }
 
 // ─── Garage ────────────────────────────────────────────────────────────
+async function loadVehiclePhotos(chartId, yr, mk, mo) {
+  const stripId = 'photoStrip_' + chartId;
+  try {
+    const query = encodeURIComponent(`${yr} ${mk} ${mo}`);
+    const resp = await fetch(
+      `https://en.wikipedia.org/w/api.php?action=query&titles=${query}&prop=pageimages&piprop=thumbnail|original&pithumbsize=400&format=json&origin=*`
+    );
+    const data = await resp.json();
+    const pages = data?.query?.pages || {};
+    const page = Object.values(pages)[0];
+    const wikiImg = page?.thumbnail?.source || page?.original?.source;
+
+    // Use Unsplash source as fallback for 3 photos
+    const searches = [
+      `${yr} ${mk} ${mo}`,
+      `${mk} ${mo} classic`,
+      `${yr} ${mk} ${mo} collector`
+    ];
+
+    const imgs = searches.map(s => 
+      `https://source.unsplash.com/400x240/?${encodeURIComponent(s)}`
+    );
+
+    if (wikiImg) imgs[0] = wikiImg;
+
+    const strip = document.getElementById(stripId);
+    if (!strip) return;
+    strip.className = 'photo-strip';
+    strip.innerHTML = imgs.map(src => 
+      `<img src="${src}" alt="${yr} ${mk} ${mo}" loading="lazy" onerror="this.parentElement.innerHTML='<div class=\'photo-placeholder\'><i class=\'ti ti-photo\' style=\'font-size:20px;opacity:.3\'></i></div>'">`
+    ).join('');
+  } catch(e) {
+    const strip = document.getElementById(stripId);
+    if (strip) strip.style.display = 'none';
+  }
+}
+
 function saveToGarage(yr, mk, mo, score, verdict, value, segment, btn) {
   if (garage.find(g=>g.yr===yr&&g.mk===mk&&g.mo===mo)) return;
   garage.push({ yr, mk, mo, score, verdict, value, segment });
@@ -492,6 +541,13 @@ function renderGarage() {
       <div class="garage-info">
         <div class="garage-name">${g.yr} ${g.mk} ${g.mo}</div>
         <div class="garage-meta">${g.segment||'Classic'} · ${g.value}</div>
+        <div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:6px">
+          <button onclick="analyzeFromGarage('${g.yr}','${g.mk.replace(/'/g,"\\'")}','${g.mo.replace(/'/g,"\\'")}');return false;" style="display:inline-flex;align-items:center;gap:4px;padding:4px 10px;background:var(--surface2);border:0.5px solid var(--border2);border-radius:20px;font-size:11px;color:var(--text);cursor:pointer;font-family:inherit"><i class="ti ti-refresh" style="font-size:12px"></i>Re-analyze</button>
+          <a href="https://www.ebay.com/sch/i.html?_nkw=${g.yr}+${g.mk}+${g.mo}" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;gap:4px;padding:4px 10px;background:var(--surface2);border:0.5px solid var(--border2);border-radius:20px;font-size:11px;color:var(--text);text-decoration:none"><i class="ti ti-tag" style="font-size:12px"></i>eBay</a>
+          <a href="https://bringatrailer.com/?s=${g.yr}+${g.mk}+${g.mo}" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;gap:4px;padding:4px 10px;background:var(--surface2);border:0.5px solid var(--border2);border-radius:20px;font-size:11px;color:var(--text);text-decoration:none"><i class="ti ti-gavel" style="font-size:12px"></i>BaT</a>
+          <a href="https://www.hemmings.com/search/?query=${g.yr}+${g.mk}+${g.mo}" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;gap:4px;padding:4px 10px;background:var(--surface2);border:0.5px solid var(--border2);border-radius:20px;font-size:11px;color:var(--text);text-decoration:none"><i class="ti ti-car" style="font-size:12px"></i>Hemmings</a>
+          <a href="https://www.hagerty.com/valuation-tools/?search=${g.yr}+${g.mk}+${g.mo}" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;gap:4px;padding:4px 10px;background:var(--surface2);border:0.5px solid var(--border2);border-radius:20px;font-size:11px;color:var(--text);text-decoration:none"><i class="ti ti-chart-bar" style="font-size:12px"></i>Hagerty</a>
+        </div>
       </div>
       <div style="text-align:right;flex-shrink:0">
         <div style="font-size:16px;font-weight:500;color:${col}">${g.score}/10</div>
