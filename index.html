@@ -171,6 +171,22 @@
   /* Footer */
   footer { text-align: center; padding: 2rem 1rem; font-size: 12px; color: var(--text2); }
   footer a { color: var(--text2); text-decoration: underline; }
+  .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 1000; align-items: center; justify-content: center; }
+  .modal-overlay.open { display: flex; }
+  .modal { background: var(--surface); border-radius: var(--radius); padding: 1.75rem; width: 100%; max-width: 380px; margin: 1rem; }
+  .modal h2 { font-size: 17px; font-weight: 500; color: var(--text); margin-bottom: .4rem; }
+  .modal p { font-size: 13px; color: var(--text2); margin-bottom: 1.25rem; line-height: 1.5; }
+  .modal input { width: 100%; padding: 10px 12px; border: 0.5px solid var(--border2); border-radius: var(--radius-sm); background: var(--surface2); color: var(--text); font-size: 14px; font-family: inherit; outline: none; margin-bottom: 10px; }
+  .modal input:focus { border-color: var(--black); }
+  .modal-btn { width: 100%; padding: 11px; background: var(--black); color: var(--gold); border: none; border-radius: var(--radius-sm); font-size: 14px; font-weight: 500; cursor: pointer; font-family: inherit; margin-bottom: 8px; }
+  .modal-btn:hover { background: #2a2a2a; }
+  .modal-secondary { width: 100%; padding: 10px; background: none; border: 0.5px solid var(--border2); color: var(--text); border-radius: var(--radius-sm); font-size: 13px; cursor: pointer; font-family: inherit; }
+  .modal-secondary:hover { background: var(--surface2); }
+  .modal-close { position: absolute; top: 1rem; right: 1rem; background: none; border: none; color: var(--text2); cursor: pointer; font-size: 20px; }
+  .modal-error { color: var(--red); font-size: 13px; margin-bottom: 8px; display: none; }
+  .modal-success { color: var(--green); font-size: 13px; margin-bottom: 8px; display: none; }
+  .login-btn { background: none; border: 1px solid rgba(255,255,255,0.2); color: #fff; padding: 6px 14px; border-radius: var(--radius-sm); font-size: 13px; cursor: pointer; font-family: inherit; }
+  .login-btn:hover { background: rgba(255,255,255,0.08); }
 </style>
 </head>
 <body>
@@ -182,7 +198,8 @@
   </a>
   <div class="topbar-right">
     <span class="pro-badge" id="planBadge">Free</span>
-    <button class="upgrade-btn" onclick="showUpgrade()">Upgrade to Pro</button>
+    <button class="login-btn" id="loginBtn" onclick="openLoginModal()">Sign in</button>
+    <button class="upgrade-btn" id="upgradeBtn" onclick="showUpgrade()">Upgrade to Pro</button>
   </div>
 </div>
 
@@ -650,8 +667,86 @@ function renderNews() {
 // ─── Upgrade modal ─────────────────────────────────────────────────────
 function showUpgrade() { window.location.href = 'https://buy.stripe.com/3cIdR80VJ0WLg9c7gR0ZW01'; }
 
+function openLoginModal() {
+  const email = localStorage.getItem('giq_email');
+  if (email && isPro && localStorage.getItem('giq_pro') === 'true') {
+    document.getElementById('accountEmail').textContent = email;
+    document.getElementById('modalSignIn').style.display = 'none';
+    document.getElementById('modalAccount').style.display = 'block';
+  } else {
+    document.getElementById('modalSignIn').style.display = 'block';
+    document.getElementById('modalAccount').style.display = 'none';
+  }
+  document.getElementById('loginModal').classList.add('open');
+  setTimeout(() => document.getElementById('loginEmail')?.focus(), 100);
+}
+
+function closeLoginModal() {
+  document.getElementById('loginModal').classList.remove('open');
+}
+
+async function submitLogin() {
+  const email = document.getElementById('loginEmail').value.trim();
+  const errEl = document.getElementById('loginError');
+  const sucEl = document.getElementById('loginSuccess');
+  const btn = document.getElementById('loginSubmitBtn');
+  errEl.style.display = 'none';
+  sucEl.style.display = 'none';
+  if (!email) { errEl.textContent = 'Please enter your email.'; errEl.style.display = 'block'; return; }
+  btn.textContent = 'Checking...';
+  btn.disabled = true;
+  try {
+    const resp = await fetch('/api/check-pro', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email })
+    });
+    const data = await resp.json();
+    if (data.isPro) {
+      localStorage.setItem('giq_pro', 'true');
+      localStorage.setItem('giq_email', email);
+      isPro = true;
+      document.getElementById('planBadge').textContent = 'Pro';
+      document.getElementById('loginBtn').textContent = email.split('@')[0];
+      document.getElementById('upgradeBtn').style.display = 'none';
+      sucEl.textContent = 'Pro unlocked! Enjoy unlimited searches.';
+      sucEl.style.display = 'block';
+      setTimeout(() => closeLoginModal(), 1500);
+    } else {
+      errEl.textContent = 'No active subscription found. Please check your email or upgrade.';
+      errEl.style.display = 'block';
+    }
+  } catch(e) {
+    errEl.textContent = 'Error connecting. Please try again.';
+    errEl.style.display = 'block';
+  }
+  btn.textContent = 'Sign in & unlock Pro';
+  btn.disabled = false;
+}
+
+function signOut() {
+  localStorage.removeItem('giq_pro');
+  localStorage.removeItem('giq_email');
+  isPro = false;
+  document.getElementById('planBadge').textContent = 'Free';
+  document.getElementById('loginBtn').textContent = 'Sign in';
+  document.getElementById('upgradeBtn').style.display = '';
+  closeLoginModal();
+}
+
+// Close modal on overlay click
+document.getElementById('loginModal')?.addEventListener('click', function(e) {
+  if (e.target === this) closeLoginModal();
+});
+
 // ─── Init ──────────────────────────────────────────────────────────────
-if (isPro) document.getElementById('planBadge').textContent = daysSinceInstall <= 7 && !localStorage.getItem('giq_pro') ? 'Trial' : isPro ? 'Pro' : 'Free';
+const savedEmail = localStorage.getItem('giq_email');
+const isManualPro = localStorage.getItem('giq_pro') === 'true';
+document.getElementById('planBadge').textContent = isManualPro ? 'Pro' : daysSinceInstall <= 7 ? 'Trial' : 'Free';
+if (savedEmail && isManualPro) {
+  document.getElementById('loginBtn').textContent = savedEmail.split('@')[0];
+  document.getElementById('upgradeBtn').style.display = 'none';
+}
 // badge already set';
 renderCountdown();
 
@@ -667,5 +762,27 @@ if (localStorage.getItem('giq_search_date') !== today) {
   searchCount = 0;
 }
 </script>
+<!-- Login / Account Modal -->
+<div class="modal-overlay" id="loginModal">
+  <div class="modal" style="position:relative">
+    <button class="modal-close" onclick="closeLoginModal()"><i class="ti ti-x"></i></button>
+    <div id="modalSignIn">
+      <h2>Sign in to ClassicGarageIQ</h2>
+      <p>Enter the email you used to subscribe. Pro access will unlock on this device.</p>
+      <input type="email" id="loginEmail" placeholder="your@email.com" onkeydown="if(event.key==='Enter')submitLogin()">
+      <div class="modal-error" id="loginError"></div>
+      <div class="modal-success" id="loginSuccess"></div>
+      <button class="modal-btn" id="loginSubmitBtn" onclick="submitLogin()">Sign in & unlock Pro</button>
+      <button class="modal-secondary" onclick="showUpgrade()">Don't have Pro yet? Upgrade →</button>
+    </div>
+    <div id="modalAccount" style="display:none">
+      <h2>Your account</h2>
+      <p id="accountEmail" style="font-size:14px;color:var(--text);font-weight:500;margin-bottom:.25rem"></p>
+      <p style="margin-bottom:1.25rem">Pro access is active on this device.</p>
+      <a href="https://billing.stripe.com/p/login/test_00000" target="_blank" style="display:block;text-align:center;padding:10px;background:var(--surface2);border:0.5px solid var(--border2);border-radius:var(--radius-sm);font-size:13px;color:var(--text);text-decoration:none;margin-bottom:8px">Manage subscription →</a>
+      <button class="modal-secondary" onclick="signOut()">Sign out</button>
+    </div>
+  </div>
+</div>
 </body>
 </html>
